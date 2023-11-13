@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RestfulApi.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,43 +11,90 @@ namespace RestfulApi.Controllers
     public class ProductController : ControllerBase
     {
         private List<Product> products = new List<Product>();
-        [HttpGet("{id}")]
 
+        [HttpGet()]
+        public IActionResult Get()
+        {
+            return Ok(products);
+        }
+
+        [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
             var product = products.FirstOrDefault(p => p.Id == id);
             if (product == null)
             {
-                return NotFound(); // 404 Not Found
+                return NotFound();
             }
             return Ok(product);
         }
 
         [HttpPost]
-        public ActionResult<Product> AddProduct([FromBody] Product product)
+        public IActionResult Post([FromBody] Product product)
         {
+
+            if (product == null)
+            {
+                return BadRequest("Invalid product data");
+            }
+
+            if (string.IsNullOrWhiteSpace(product.Name))
+            {
+                return BadRequest("Product name is required");
+            }
+
+            product.Id = products.Count + 1;
             products.Add(product);
-            return CreatedAtAction(nameof(Get), new { id = product.Id }, product); // 201 Created
+
+            return CreatedAtRoute("Post", new { id = product.Id }, product);
+        }
+
+        [HttpPost("create")]
+        public IActionResult Create([FromBody] Product productModel)
+        {
+
+            if (productModel == null)
+            {
+                return BadRequest("Invalid product data");
+            }
+
+            if (string.IsNullOrWhiteSpace(productModel.Name))
+            {
+                return BadRequest("Product name is required");
+            }
+
+
+            var productName = productModel.Name;
+            var productDescription = productModel.Description;
+
+            var newProduct = new Product
+            {
+                Id = products.Count + 1,
+                Name = productName,
+                Description = productDescription
+            };
+
+            products.Add(newProduct);
+
+            return Ok(newProduct);
         }
 
 
-        //// POST api/<ProductController>
-        //[HttpPost]
-        //public void Post([FromBody] string value)
-        //{
-        //}
 
-        //// PUT api/<ProductController>/5
-        //[HttpPut("{id}")]
-        //public void Put(int id, [FromBody] string value)
-        //{
-        //}
+        [HttpDelete("{id}")]
+        public IActionResult DeleteProduct(int id)
+        {
+            var product = products.Find(p => p.Id == id);
 
-        //// DELETE api/<ProductController>/5
-        //[HttpDelete("{id}")]
-        //public void Delete(int id)
-        //{
+            if (product == null)
+            {
+                return NotFound();
+            }
 
-        //}
+            products.Remove(product);
+
+            return Ok();
+        }
+
     }
 }
